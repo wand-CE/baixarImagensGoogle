@@ -1,13 +1,13 @@
 from subprocess import CREATE_NO_WINDOW
 
-from selenium.common import TimeoutException
+from selenium.common import TimeoutException, NoSuchElementException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions as ec
 
 import requests
 import os
@@ -27,9 +27,12 @@ class Downloader:
 
         self.make_search()
 
-    def download_image(self, url, folder_name, img_name):
+    @staticmethod
+    def download_image(url, folder_name, img_name):
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)'
+                          ' Chrome/58.0.3029.110 Safari/537.3'
+        }
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             with open(os.path.join(folder_name, str(img_name) + '.jpg'), 'wb') as file:
@@ -37,7 +40,8 @@ class Downloader:
         else:
             raise Exception('Não foi possivel baixar a imagem com sucesso')
 
-    def users_input(self):
+    @staticmethod
+    def users_input():
         term_to_search = input('Informe o nome do objeto a ser pesquisado: ')
         while True:
             try:
@@ -71,7 +75,8 @@ class Downloader:
         driver.execute_script("window.scrollTo(0, 0);")
         self.select_images_containers(driver, folder_name, term_to_search, quant_images)
 
-    def scroll_to_end(self, driver):
+    @staticmethod
+    def scroll_to_end(driver):
         for i in range(5):
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             time.sleep(1)
@@ -96,17 +101,23 @@ class Downloader:
 
             try:
                 # WebDriverWait(driver, 5).until(
-                #     EC.presence_of_element_located((By.XPATH, f"""//*[@id="islrg"]/div[1]/div[{current_index}]"""))).click()
+                #     ec.presence_of_element_located((By.XPATH, f"""//*[@id="islrg"]/div[1]/div[{current_index}]"""))
+                #     ).click()
                 # time.sleep(1)
-                WebDriverWait(driver, 5).until(
-                    EC.presence_of_element_located(
-                        (By.XPATH, f"""//*[@id="rso"]/div/div/div[1]/div/div/div[{current_index}]"""))).click()
+                element_on_grid = WebDriverWait(driver, 5).until(ec.presence_of_element_located(
+                    (By.XPATH, f"""//*[@id="rso"]/div/div/div[1]/div/div/div[{current_index}]""")))
+                try:
+                    element_on_grid.find_element(By.XPATH, './/*[text()="Pesquisas relacionadas"]')
+                    continue
+                except NoSuchElementException:
+                    element_on_grid.click()
                 time.sleep(1)
 
-                imageElement = WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((By.XPATH,
-                                                    """//*[@id="Sva75c"]/div[2]/div[2]/div[2]/div[2]/c-wiz/div/div/div/div/div[3]/div[1]/a/img[1]""")))
-                imageURL = imageElement.get_attribute('src')
+                image_element = WebDriverWait(driver, 10).until(
+                    ec.presence_of_element_located((By.XPATH,
+                                                    '//*[@id="Sva75c"]/div[2]/div[2]/div/div[2]/c-wiz/div/'
+                                                    'div[3]/div[1]/a/img[1]')))
+                image_url = image_element.get_attribute('src')
 
                 index_image += 1
 
@@ -114,9 +125,9 @@ class Downloader:
 
                 img_name = f'{file_name}_{index_image}'
 
-                self.download_image(imageURL, folder_name, img_name)
+                self.download_image(image_url, folder_name, img_name)
                 num_downloaded_imgs += 1
-                print(f"Imagem nº{num_downloaded_imgs} baixada. URL: {imageURL}\nNome da imagem: {img_name}.jpg",
+                print(f"Imagem nº{num_downloaded_imgs} baixada. URL: {image_url}\nNome da imagem: {img_name}.jpg",
                       end="\n\n")
 
                 with open(os.path.join(folder_name, 'last_index_div.json'), 'w') as file:
