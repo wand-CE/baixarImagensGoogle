@@ -7,7 +7,7 @@ relacionado a ele
 
 ## Como executar
 
-Para executá-lo é preciso ter o python instalado, caso não tenha, baixe [aqui]("https://www.python.org/downloads/"):
+Para executá-lo é preciso ter o python instalado, caso não tenha, baixe aqui: https://www.python.org/downloads/
 
 Após instalar o python, de preferência execute o projeto em uma maquina virtual, para criar uma com o python digite:
 
